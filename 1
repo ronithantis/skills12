@@ -1,0 +1,2593 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+ 
+
+// 4 Core Organization Domains
+
+const DOMAINS = {
+
+  COGNITIVE: 'התארגנות מחשבתית',
+
+  ENVIRONMENT: 'התארגנות בסביבה',
+
+  DIGITAL: 'התארגנות דיגיטלית',
+
+  TIME: 'התארגנות בזמן ובמשימות',
+
+};
+
+ 
+
+// Descriptions for each domain
+
+const DOMAIN_DESCRIPTIONS = {
+
+  [DOMAINS.COGNITIVE]: 'יכולת לתכנן קדימה, לקבוע סדר עדיפויות, לפרק משימות גדולות ולעבוד עם רשימות.',
+
+  [DOMAINS.ENVIRONMENT]: 'שמירה על סדר בציוד, בתיק, בשולחן העבודה ומקום קבוע לחפצים אישיים.',
+
+  [DOMAINS.DIGITAL]: 'ניהול תיקיות וקבצים במחשב ובטלפון, שמות מסמכים ברורים וגיבוי חומרים.',
+
+  [DOMAINS.TIME]: 'ניהול שגרות יומיות, הכנה מראש, עמידה בזמנים והתמודדות עם דחיינות ועומס.',
+
+};
+
+ 
+
+// Status Levels based on score
+
+const STATUS_LEVELS = {
+
+  EXCELLENT: { title: 'מצוין', text: 'אתה משתמש בהרגלי התארגנות יעילים באופן עקבי.' },
+
+  ON_TRACK: { title: 'בדרך הנכונה', text: 'יש לך בסיס טוב. כמה שינויים קטנים יהפכו את ההתארגנות שלך ליעילה הרבה יותר.' },
+
+  NEEDS_BOOST: { title: 'כדאי לחזק', text: 'יש לך הרגלים טובים, אבל הם אינם עקביים.' },
+
+  FOCUS_AREA: { title: 'זה התחום שכדאי להתחיל ממנו', text: 'כמה שינויים קטנים יכולים לחסוך לך הרבה זמן ולחץ.' }
+
+};
+
+ 
+
+// 24 Diagnostic Scenarios (6 per domain)
+
+const ALL_QUESTIONS = [
+
+  // Cognitive (התארגנות מחשבתית)
+
+  {
+
+    id: 'c1',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'כשיש לך שבוע עמוס במבחנים ועבודות, כיצד אתה ניגש אל המשימות?',
+
+    options: [
+
+      { text: 'מכין רשימת משימות מסודרת ומחלק את החומר לימים ספציפיים מראש.', score: 4 },
+
+      { text: 'רושם לעצמי נקודות מרכזיות ומתחיל לעבוד לפי מה שדחוף יותר.', score: 3 },
+
+      { text: 'מנסה לזכור בראש מה צריך לעשות ועובד כשיש זמן.', score: 2 },
+
+      { text: 'מתחיל ללמוד רק ברגע שהעומס מרגיש ממש מעיק.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'c2',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'כשאתה מקבל פרויקט לימודי גדול או עבודה ארוכה לקראת הגשה:',
+
+    options: [
+
+      { text: 'מפרק מיד את המשימה לשלבים קטנים וקובע תאריך יעד לכל שלב.', score: 4 },
+
+      { text: 'חושב על השלבים העיקריים ומתחיל בחלק הראשון בימים הקרובים.', score: 3 },
+
+      { text: 'מחכה קצת, ורק כשהמועד מתקרב מנסה להבין מאיפה להתחיל.', score: 2 },
+
+      { text: 'עובד בבת אחת על כל הפרויקט ביומיים האחרונים לפני ההגשה.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'c3',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'כשאתה מרגיש הצפה מרוב משימות ולימודים:',
+
+    options: [
+
+      { text: 'עוצר, מרוקן את כל המחשבות לדף ובוחר משימה אחת ראשונה להתמקד בה.', score: 4 },
+
+      { text: 'לוקח הפסקה קצרה כדי להירגע ואז חוזר לעשות מה שביכולתי.', score: 3 },
+
+      { text: 'מדלג בין כמה דברים במקביל בלי לסיים אף אחד עד הסוף.', score: 2 },
+
+      { text: 'משתקע בחוסר מעש ונמנע מלהתחיל לעבוד עד שמישהו עוזר לי.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'c4',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'איך אתה קובע באיזה נושא להתחיל ללמוד בשעות אחה"צ?',
+
+    options: [
+
+      { text: 'לפי תכנון מוקדם שקבעתי מראש בתחילת השבוע.', score: 4 },
+
+      { text: 'לפי מה שחשוב ודחוף יותר ליום המחרת.', score: 3 },
+
+      { text: 'לפי מה שבא לי לעשות באותו רגע.', score: 2 },
+
+      { text: 'אני בדרך כלל דוחה את ההחלטה עד הערב.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'c5',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'עד כמה אתה משתמש ברשימות מעקב (Checklist) למשימות ולציוד?',
+
+    options: [
+
+      { text: 'משתמש באופן קבוע ביומן, אפליקציה או מחברת ייעודית.', score: 4 },
+
+      { text: 'כותב רשימות מדי פעם כשמדובר בימים עמוסים במיוחד.', score: 3 },
+
+      { text: 'רושם לפעמים פתקים קטנים אבל נוטה לאבד אותם.', score: 2 },
+
+      { text: 'לא משתמש ברשימות בכלל, מעדיף להסתמך על הזיכרון.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'c6',
+
+    domain: DOMAINS.COGNITIVE,
+
+    scenario: 'כשמשהו בתכנון המקורי שלך משתנה פתאום (למשל: בוטל שיעור או נוסף מבחן):',
+
+    options: [
+
+      { text: 'מתאים מחדש את התוכנית השבועית ברוגע ובמהירות.', score: 4 },
+
+      { text: 'מתארגן מחדש תוך כמה דקות וממשיך הלאה.', score: 3 },
+
+      { text: 'מתעצבן מעט, ולוקח לי זמן לחזור לפוקוס.', score: 2 },
+
+      { text: 'זה מוציא אותי לחלוטין מאיזון ומשבש לי את כל יתר היום.', score: 1 },
+
+    ]
+
+  },
+
+ 
+
+  // Environment (התארגנות בסביבה)
+
+  {
+
+    id: 'e1',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'איך נראה תהליך הכנת ילקוט בית הספר שלך בערב?',
+
+    options: [
+
+      { text: 'בודק מערכת שעות, מוציא ציוד מיותר ומכניס בדיוק מה שצריך למחר.', score: 4 },
+
+      { text: 'מציץ במערכת ומארגן את התיק במהירות תוך שתי דקות.', score: 3 },
+
+      { text: 'מארגן בבוקר בלחץ רגע לפני היציאה מהבית.', score: 2 },
+
+      { text: 'התיק נשאר עמוס תמיד בכל המחברות והספרים של השבוע.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'e2',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'כשאתה יושב ללמוד בבית, מה מצב שולחן העבודה שלך?',
+
+    options: [
+
+      { text: 'נקי ומאורגן. נמצאים עליו רק החומרים של הנושא שאני לומד עכשיו.', score: 4 },
+
+      { text: 'מפנה מקום מספיק כדי לשים את המחברת והספר.', score: 3 },
+
+      { text: 'השולחן עמוס בחפצים, בגדים או צלחות, אבל אני מצטופף.', score: 2 },
+
+      { text: 'מעדיף ללמוד על המיטה או הספה כי השולחן לא פנוי.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'e3',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'מה קורה כשאתה צריך למצוא דף עבודה או מחברת ספציפית בילקוט?',
+
+    options: [
+
+      { text: 'מוצא מיד תוך שניות, לכל מקצוע יש חוצץ או תא קבוע.', score: 4 },
+
+      { text: 'מוצא די במהירות תוך חיפוש קצר בתא המרכזי.', score: 3 },
+
+      { text: 'נאלץ לחפש בין מגוון דפים מקומטים בתחתית התיק.', score: 2 },
+
+      { text: 'לרוב מגלה שהדף נשאר בבית או הלך לאיבוד.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'e4',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'כשאתה מסיים להשתמש בחפץ (כמו ציוד כתיבה, בגד ספורט, או מטען):',
+
+    options: [
+
+      { text: 'מחזיר אותו באופן מיידי למקום הקבוע שלו.', score: 4 },
+
+      { text: 'מניח אותו בסביבה הקרובה ואוסף בסוף היום.', score: 3 },
+
+      { text: 'מציב אותו איפשהו בחדר, ואוסף רק כשצריך לסדר.', score: 2 },
+
+      { text: 'משאיר אותו איפה שנפל, ומחפש אותו מחדש כשאני צריך אותו.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'e5',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'איך מנוהלים המגירות והמדפים הלימודיים שלך בחדר?',
+
+    options: [
+
+      { text: 'מסודרים לפי נושאים ומקצועות, קל לגשת לכל דבר.', score: 4 },
+
+      { text: 'יש סדר כללי, מדי פעם אני מרענן ומסדר.', score: 3 },
+
+      { text: 'בלאגן קל, אבל אני פחות או יותר יודע איפה כל דבר נמצא.', score: 2 },
+
+      { text: 'ערימות לא ממוינות, קשה למצוא ציוד ישן יותר.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'e6',
+
+    domain: DOMAINS.ENVIRONMENT,
+
+    scenario: 'לקראת יום מיוחד (כמו טיול שנתי או יום ספורט):',
+
+    options: [
+
+      { text: 'מכין את כל הציוד הנדרש כבר בערב שלפני לפי רשימה.', score: 4 },
+
+      { text: 'מכין חלק בערב ואת היתר מביא בבוקר.', score: 3 },
+
+      { text: 'נזכר במה שצריך רק בבוקר תוך כדי יציאה.', score: 2 },
+
+      { text: 'בדרך כלל שכחתי פריט מרכזי או ציוד הכרחי.', score: 1 },
+
+    ]
+
+  },
+
+ 
+
+  // Digital (התארגנות דיגיטלית)
+
+  {
+
+    id: 'd1',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'איך שמורים הקבצים ועבודות הבית במחשב או בטלפון שלך?',
+
+    options: [
+
+      { text: 'בתיקייה ראשית מסודרת לפי שנות לימוד ומקצועות.', score: 4 },
+
+      { text: 'בתיקייה אחת כללית של "בית ספר".', score: 3 },
+
+      { text: 'מפוזרים בתיקיית ההורדות (Downloads) או על שולחן העבודה.', score: 2 },
+
+      { text: 'אני לא יודע איפה הקבצים נשמרים, ומחפש דרך החיפוש המהיר.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'd2',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'כשאתה שומר מסמך או עבודה חדשה, איזה שם אתה נותן לקובץ?',
+
+    options: [
+
+      { text: 'שם ברור ומפורט (לדוגמה: "היסטוריה_עבודה1_יוסי").', score: 4 },
+
+      { text: 'שם קצר המזהה את הנושא (לדוגמה: "היסטוריה1").', score: 3 },
+
+      { text: 'משאיר את השם האוטומטי שהמחשב נותן (לדוגמה: "Document1").', score: 2 },
+
+      { text: 'לוחץ על מקשים אקראיים רק כדי לשמור (לדוגמה: "asdfgh").', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'd3',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'מה קורה כשמורה שולח בקבוצת הווצאפ או במייל דף עבודה או חומר למבחן?',
+
+    options: [
+
+      { text: 'שומר מיד בתיקייה המתאימה או מעביר לענן.', score: 4 },
+
+      { text: 'פותח וקורא, ושומר בזיכרון הנייד במידת הצורך.', score: 3 },
+
+      { text: 'משאיר בהודעות הווצאפ ומקווה שאמצא את זה בעת הצורך.', score: 2 },
+
+      { text: 'זה נאבד בין מאות ההודעות בקבוצה עד שמישהו מנסח מחדש.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'd4',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'איך נראה שולחן העבודה (Desktop) במחשב או במסך הבית בנייד?',
+
+    options: [
+
+      { text: 'מסודר, רק אייקונים ותקיות חיוניות בלבד.', score: 4 },
+
+      { text: 'יש די הרבה אייקונים, אבל אני שומר על אזורים פנויים.', score: 3 },
+
+      { text: 'מלא בעשרות תמונות, קבצים וקישורים מפוזרים.', score: 2 },
+
+      { text: 'עמוס לחלוטין עד שלא רואים את רקע המסך.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'd5',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'עד כמה אתה מגבה עבודות ופרויקטים חשובים?',
+
+    options: [
+
+      { text: 'עובד מראש בענן (Google Drive/OneDrive) עם גיבוי אוטומטי.', score: 4 },
+
+      { text: 'שולח לעצמי עותק במייל או בווצאפ מדי כמה ימים.', score: 3 },
+
+      { text: 'נזכר לגבות רק כשיש תקלה או כשהעבודה כמעט מוכנה.', score: 2 },
+
+      { text: 'לא מגבה בכלל, מסתמך על זה שהמכשיר יפעל תמיד.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 'd6',
+
+    domain: DOMAINS.DIGITAL,
+
+    scenario: 'מחיקת קבצים מיותרים, דיווחים ישנים ותמונות מיותרות:',
+
+    options: [
+
+      { text: 'מנקה באופן שוטף ומסודר אחת לכמה שבועות.', score: 4 },
+
+      { text: 'מנקה מדי פעם כשהאחסון מתחיל להתמלא.', score: 3 },
+
+      { text: 'מנקה רק כשיש הודעה שהזיכרון מלא לחלוטין.', score: 2 },
+
+      { text: 'לעולם לא מוחק קבצים, צובר הכל במכשיר.', score: 1 },
+
+    ]
+
+  },
+
+ 
+
+  // Time & Tasks (התארגנות בזמן ובמשימות)
+
+  {
+
+    id: 't1',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'מתי אתה מתחיל ללמוד למבחן גדול או לבוחן חשוב?',
+
+    options: [
+
+      { text: 'כמה ימים מראש, לפי תוכנית חלוקה יומית מסודרת.', score: 4 },
+
+      { text: 'יומיים מראש, עובר על החומר באופן מרוכז.', score: 3 },
+
+      { text: 'אחה"צ אחד לפני המבחן, בלמידה אינטנסיבית.', score: 2 },
+
+      { text: 'בליילה שלפני או בבוקר של המבחן בדרך לבית הספר.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 't2',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'מהי רמת היכולת שלך להגיע בזמן בבוקר לבית הספר?',
+
+    options: [
+
+      { text: 'מגיע תמיד כ-10 דקות לפני הצלצול ברוגע.', score: 4 },
+
+      { text: 'מגיע בדיוק בזמן הצלצול באופן עקבי.', score: 3 },
+
+      { text: 'מאחר לעיתים קרובות בכמה דקות בגלל לחץ בבוקר.', score: 2 },
+
+      { text: 'מאחר כמעט כל יום, הבוקר שלי תמיד לחוץ ומבולבל.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 't3',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'כיצד אתה מנהל את שיעורי הבית השוטפים שלך?',
+
+    options: [
+
+      { text: 'מסיים אותם ביום שבו הם ניתנו, כדי לפנות את יתר השבוע.', score: 4 },
+
+      { text: 'יושב עליהם ביום שלפני השיעור הבא בלו"ז קבוע.', score: 3 },
+
+      { text: 'עושה אותם ברגע האחרון בשעות הלילה או בהפסקות.', score: 2 },
+
+      { text: 'שוכח מהם לעיתים קרובות או מכין רק חלקית.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 't4',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'איך אתה משלב בין זמן מסכים/פנאי/חוגים לבין מטלות לימודים?',
+
+    options: [
+
+      { text: 'קובע מראש שעות מוגדרות ללימודים ושעות לפנאי, ועומד בהן.', score: 4 },
+
+      { text: 'משתדל לסיים לימודים לפני שיוצא או מתפנה לפנאי.', score: 3 },
+
+      { text: 'נגרר לזמן מסכים ממושך ונאלץ ללמוד מאוחר בלילה.', score: 2 },
+
+      { text: 'זמן הפנאי משתלט על כל היום, והמשימות נדחקות הצידה.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 't5',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'כשמגיעה משימה שאתה פחות אוהב או מוצא בה עניין:',
+
+    options: [
+
+      { text: 'מתחיל דווקא ממנה כדי להיפטר ממנה על ההתחלה.', score: 4 },
+
+      { text: 'מבטיח לעצמי צ\'ופר קטן מיד כשאסיים אותה.', score: 3 },
+
+      { text: 'דוחה אותה שוב ושוב עד שאין ברירה.', score: 2 },
+
+      { text: 'מוותר עליה או מבצע אותה בחפזון וברמה חלקית.', score: 1 },
+
+    ]
+
+  },
+
+  {
+
+    id: 't6',
+
+    domain: DOMAINS.TIME,
+
+    scenario: 'איך נראית שגרת הלילה שלך לקראת יום הלימודים המחרת?',
+
+    options: [
+
+      { text: 'מסיים הכל מוקדם, הולך לישון בשעה קבועה וישן מספיק.', score: 4 },
+
+      { text: 'משתדל לפרוש לישון בשעה הגיונית רוב ימות השבוע.', score: 3 },
+
+      { text: 'נשאר ער עד מאוחר מדי מול מסכים, ומתקשה לקום בבוקר.', score: 2 },
+
+      { text: 'אין לי שגרה קבועה, הלילות שלי אינם סדורים.', score: 1 },
+
+    ]
+
+  },
+
+];
+
+ 
+
+// 5 General Organization Profiles
+
+const PROFILES = {
+
+  ARCHITECT: {
+
+    title: 'האדריכל',
+
+    subtitle: 'אתה בונה מערכות שעוזרות לך להתנהל ביעילות.',
+
+    desc: 'יש לך ראייה מרחבית ויכולת גבוהה ליצור סדר מתוכנן מראש. אתה יודע לבנות שיטות עבודה שחוסכות לך זמן ומאמץ, ורוב הזמן הסביבה והזמן שלך פועלים לטובתך.',
+
+  },
+
+  PLANNER: {
+
+    title: 'המתכנן',
+
+    subtitle: 'אתה חושב קדימה, אך לפעמים חסרה עקביות.',
+
+    desc: 'יש לך את ההבנה והרצון להיות מאורגן, ואת היכולת לתכנן מה צריך להיעשות. האתגר העיקרי שלך הוא לשמור על השגרה לאורך זמן גם כשעולה עומס.',
+
+  },
+
+  BUILDER: {
+
+    title: 'הבונה',
+
+    subtitle: 'כבר התחלת לפתח הרגלי התארגנות טובים. עכשיו הזמן להפוך אותם לשגרה.',
+
+    desc: 'יש לך יסודות חזקים בתחומים מסוימים, בעוד שבתחומים אחרים יש עדיין מקום לדיוק. עם מעט דגש על שגרות קבועות, תוכל להפוך את ההתארגנות לטבע שני.',
+
+  },
+
+  IMPROVISER: {
+
+    title: 'המאלתר',
+
+    subtitle: 'אתה בדרך כלל מסתדר, אך מבזבז זמן בגלל חוסר סדר קבוע.',
+
+    desc: 'יש לך יכולת גבוהה להתמודד עם מצבים בזמן אמת ולהגיב מהר, אך הסתמכות יתר על אלתור יוצרת עומס מחשבתי מיותר ולחץ של הרגע האחרון.',
+
+  },
+
+  FIREFIGHTER: {
+
+    title: 'מכבה השריפות',
+
+    subtitle: 'רוב המשימות שלך מתבצעות ברגע האחרון.',
+
+    desc: 'אתה משקיע המון אנרגיה בטיפול בדחופים ובכיבוי "שריפות" נקודתיות. אימוץ של 2-3 הרגלים קטנים יכול לחסוך לך לחץ עצום ולפנות לך זמן לפנאי ולשקט.',
+
+  },
+
+};
+
+ 
+
+// Targeted 7-Day Plans per domain
+
+const SEVEN_DAY_PLANS = {
+
+  [DOMAINS.COGNITIVE]: {
+
+    title: 'תוכנית 7 ימים לחיזוק התארגנות מחשבתית',
+
+    days: [
+
+      { day: 'יום 1', task: 'הכן פתק או דף נקי שבו תרשום את 3 המשימות העיקריות שלך למחר.' },
+
+      { day: 'יום 2', task: 'לפני תחילת הלימודים, פרק משימה אחת גדולה ל-3 צעדים קטנים ופשוטים.' },
+
+      { day: 'יום 3', task: 'נסה שיטת עבודה ממוקדת: 20 דקות עבודה רצופה ללא הסחות דעת ואז 5 דקות הפסקה.' },
+
+      { day: 'יום 4', task: 'עשה "ריקון מחשבות" למשך 2 דקות: רשום על דף את כל מה שמטריד או מעסיק אותך.' },
+
+      { day: 'יום 5', task: 'סמן בולט על המשימה החשובה ביותר של היום והתחל דווקא ממנה.' },
+
+      { day: 'יום 6', task: 'סקור את השבוע שחולף ובדוק אילו 2 דברים תכננת מראש שפעלו היטב.' },
+
+      { day: 'יום 7', task: 'שב 5 דקות והכן סדר עדיפויות ראשוני לקראת השבוע הבא.' },
+
+    ]
+
+  },
+
+  [DOMAINS.ENVIRONMENT]: {
+
+    title: 'תוכנית 7 ימים לחיזוק התארגנות בסביבה',
+
+    days: [
+
+      { day: 'יום 1', task: 'פנה לחלוטין את שולחן הלמידה שלך והשאר עליו רק מנורה וציוד בסיסי.' },
+
+      { day: 'יום 2', task: 'רוקן את ילקוט בית הספר, נקה דפים מיותרים והחזר רק מה שנחוץ.' },
+
+      { day: 'יום 3', task: 'קבע מקום קבוע לשלושה חפצים מרכזיים: מפתחות, מטען וציוד כתיבה.' },
+
+      { day: 'יום 4', task: 'סדר תא אחד בילקוט או מגירה אחת בחדר כך שכל דבר יהיה נגיש בנגיעה.' },
+
+      { day: 'יום 5', task: 'הכנס שגרת "ערב נקי": החזר כל חפץ למקומו 10 דקות לפני השינה.' },
+
+      { day: 'יום 6', task: 'מיין את מחברות וספרי הלימוד בחדר לפי מקצועות.' },
+
+      { day: 'יום 7', task: 'בדוק כמה זמן לוקח לך להכין את התיק למחר כשהסביבה שלך מסודרת.' },
+
+    ]
+
+  },
+
+  [DOMAINS.DIGITAL]: {
+
+    title: 'תוכנית 7 ימים לחיזוק התארגנות דיגיטלית',
+
+    days: [
+
+      { day: 'יום 1', task: 'צור תיקייה חדשה ללימודים במחשב או בענן.' },
+
+      { day: 'יום 2', task: 'סדר את שולחן העבודה במחשב (Desktop).' },
+
+      { day: 'יום 3', task: 'תן שמות ברורים ומפורטים לקבצים.' },
+
+      { day: 'יום 4', task: 'מחק קבצים והודעות מיותרות.' },
+
+      { day: 'יום 5', task: 'סדר את גלריית התמונות או תיקיית ההורדות.' },
+
+      { day: 'יום 6', task: 'צור גיבוי ראשון לקובץ חשוב בענן (Drive).' },
+
+      { day: 'יום 7', task: 'בדוק כמה זמן לוקח לך למצוא כל קובץ.' },
+
+    ]
+
+  },
+
+  [DOMAINS.TIME]: {
+
+    title: 'תוכנית 7 ימים לחיזוק התארגנות בזמן ובמשימות',
+
+    days: [
+
+      { day: 'יום 1', task: 'הכן את הילקוט והבגדים למחר בערב, לפני שהולכים לישון.' },
+
+      { day: 'יום 2', task: 'כיוון שעון מעורר 10 דקות מוקדם יותר בבוקר למניעת לחץ.' },
+
+      { day: 'יום 3', task: 'קבע שעה קבועה אחה"צ שבה אתה יושב ל-20 דקות של שיעורי בית/חזרות.' },
+
+      { day: 'יום 4', task: 'כשתצטרך לעשות משימה שאין לך כוח אליה, התחייב לעבוד עליה רק 5 דקות.' },
+
+      { day: 'יום 5', task: 'הנח את הנייד בחדר אחר בזמן שאתה לומד או מכין שיעורים.' },
+
+      { day: 'יום 6', task: 'בדוק ביומן/במשוב מתי המבחן הקרוב והגדר יום שבו תתחיל ללמוד.' },
+
+      { day: 'יום 7', task: 'שים לב כמה זמן פנוי ושקט נפשי קיבלת בזכות ההכנה מראש.' },
+
+    ]
+
+  },
+
+};
+
+ 
+
+export default function App() {
+
+  // Screens: 'welcome', 'entry', 'instructions', 'diagnostic', 'processing', 'results', 'finish', 'teacher_dash'
+
+  const [currentScreen, setCurrentScreen] = useState('welcome');
+
+ 
+
+  // Student Details
+
+  const [classCode, setClassCode] = useState('');
+
+  const [studentName, setStudentName] = useState('');
+
+  const [studentGrade, setStudentGrade] = useState('');
+
+  const [entryError, setEntryError] = useState('');
+
+ 
+
+  // Diagnostic State
+
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+
+  const [userAnswers, setUserAnswers] = useState({}); // { qId: score }
+
+  const [selectedOption, setSelectedOption] = useState(null);
+
+ 
+
+  // Teacher Dashboard State
+
+  const [classCodesList, setClassCodesList] = useState([
+
+    { code: 'ORANIT8', createdAt: '2026-02-10', active: true, count: 18 },
+
+    { code: 'CLASS2026', createdAt: '2026-03-01', active: true, count: 12 },
+
+  ]);
+
+  const [newCodeInput, setNewCodeInput] = useState('');
+
+  const [codeError, setCodeError] = useState('');
+
+  const [showIndividualNames, setShowIndividualNames] = useState(false);
+
+  const [qrModalCode, setQrModalCode] = useState(null);
+
+  const [customBaseUrl, setCustomBaseUrl] = useState('');
+
+  const [copySuccess, setCopySuccess] = useState(false);
+
+ 
+
+  // Auto-load Class Code from URL Query Parameter if available (e.g. ?code=ORANIT8)
+
+  useEffect(() => {
+
+    if (typeof window !== 'undefined') {
+
+      const params = new URLSearchParams(window.location.search);
+
+      const queryCode = params.get('code');
+
+      if (queryCode) {
+
+        setClassCode(queryCode.toUpperCase());
+
+      }
+
+    }
+
+  }, []);
+
+ 
+
+  // Compute Base URL dynamically
+
+  const getBaseUrl = () => {
+
+    if (customBaseUrl.trim()) return customBaseUrl.trim();
+
+    if (typeof window !== 'undefined') {
+
+      const href = window.location.href.split('?')[0].split('#')[0];
+
+      if (href && !href.startsWith('about:') && !href.startsWith('blob:')) {
+
+        return href;
+
+      }
+
+    }
+
+    return 'https://mirror-organize.app';
+
+  };
+
+ 
+
+  // Copy Direct Link to Clipboard
+
+  const handleCopyLink = (code) => {
+
+    const fullLink = `${getBaseUrl()}?code=${code}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+
+      navigator.clipboard.writeText(fullLink).then(() => {
+
+        setCopySuccess(true);
+
+        setTimeout(() => setCopySuccess(false), 2500);
+
+      }).catch(() => {
+
+        fallbackCopy(fullLink);
+
+      });
+
+    } else {
+
+      fallbackCopy(fullLink);
+
+    }
+
+  };
+
+ 
+
+  const fallbackCopy = (text) => {
+
+    const tempInput = document.createElement('input');
+
+    tempInput.value = text;
+
+    document.body.appendChild(tempInput);
+
+    tempInput.select();
+
+    document.execCommand('copy');
+
+    document.body.removeChild(tempInput);
+
+    setCopySuccess(true);
+
+    setTimeout(() => setCopySuccess(false), 2500);
+
+  };
+
+ 
+
+  // Random 6-char Code Generator
+
+  const generateRandomCode = () => {
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+    let res = '';
+
+    for (let i = 0; i < 6; i++) {
+
+      res += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    }
+
+    return res;
+
+  };
+
+ 
+
+  // Create new class code
+
+  const handleCreateCode = () => {
+
+    setCodeError('');
+
+    let codeToAdd = newCodeInput.trim().toUpperCase();
+
+    if (!codeToAdd) {
+
+      codeToAdd = generateRandomCode();
+
+    }
+
+    if (classCodesList.some(c => c.code === codeToAdd)) {
+
+      setCodeError('קוד זה כבר קיים במערכת');
+
+      return;
+
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const newClass = { code: codeToAdd, createdAt: today, active: true, count: 0 };
+
+    setClassCodesList([newClass, ...classCodesList]);
+
+    setNewCodeInput('');
+
+    // Open QR modal immediately upon code creation!
+
+    setQrModalCode(codeToAdd);
+
+  };
+
+ 
+
+  // Remove code
+
+  const handleDeleteCode = (codeToDelete) => {
+
+    setClassCodesList(classCodesList.filter(c => c.code !== codeToDelete));
+
+  };
+
+ 
+
+  // Start Student Entry
+
+  const handleEntrySubmit = (e) => {
+
+    e.preventDefault();
+
+    if (!classCode.trim()) {
+
+      setEntryError('יש להזין קוד כיתה');
+
+      return;
+
+    }
+
+    if (!studentName.trim()) {
+
+      setEntryError('יש להזין שם פרטי');
+
+      return;
+
+    }
+
+    setEntryError('');
+
+    setCurrentScreen('instructions');
+
+  };
+
+ 
+
+  // Shuffle Scenarios on Start
+
+  const startDiagnostic = () => {
+
+    const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+
+    setShuffledQuestions(shuffled);
+
+    setCurrentQIndex(0);
+
+    setUserAnswers({});
+
+    setSelectedOption(null);
+
+    setCurrentScreen('diagnostic');
+
+  };
+
+ 
+
+  // Handle Option Select
+
+  const handleNextQuestion = () => {
+
+    if (selectedOption === null) return;
+
+    const currentQ = shuffledQuestions[currentQIndex];
+
+    const newAnswers = { ...userAnswers, [currentQ.id]: selectedOption };
+
+    setUserAnswers(newAnswers);
+
+ 
+
+    if (currentQIndex + 1 < shuffledQuestions.length) {
+
+      setCurrentQIndex(currentQIndex + 1);
+
+      setSelectedOption(null);
+
+    } else {
+
+      // Finished all 24 scenarios -> processing screen
+
+      setCurrentScreen('processing');
+
+      setTimeout(() => {
+
+        setCurrentScreen('results');
+
+      }, 2200);
+
+    }
+
+  };
+
+ 
+
+  // Compute Results
+
+  const resultsData = useMemo(() => {
+
+    if (Object.keys(userAnswers).length === 0) return null;
+
+ 
+
+    // Scores per domain
+
+    const domainScores = {
+
+      [DOMAINS.COGNITIVE]: { total: 0, count: 0 },
+
+      [DOMAINS.ENVIRONMENT]: { total: 0, count: 0 },
+
+      [DOMAINS.DIGITAL]: { total: 0, count: 0 },
+
+      [DOMAINS.TIME]: { total: 0, count: 0 },
+
+    };
+
+ 
+
+    ALL_QUESTIONS.forEach(q => {
+
+      const score = userAnswers[q.id];
+
+      if (score !== undefined && domainScores[q.domain]) {
+
+        domainScores[q.domain].total += score;
+
+        domainScores[q.domain].count += 1;
+
+      }
+
+    });
+
+ 
+
+    // Domain status determination (Average score out of 4)
+
+    const domainStatus = {};
+
+    let lowestDomain = DOMAINS.COGNITIVE;
+
+    let minAvg = 5;
+
+    let highestDomain = DOMAINS.TIME;
+
+    let maxAvg = 0;
+
+    let overallSum = 0;
+
+ 
+
+    Object.keys(domainScores).forEach(domain => {
+
+      const count = domainScores[domain].count || 6;
+
+      const avg = domainScores[domain].total / count;
+
+      overallSum += avg;
+
+ 
+
+      let statusObj = STATUS_LEVELS.ON_TRACK;
+
+      if (avg >= 3.4) {
+
+        statusObj = STATUS_LEVELS.EXCELLENT;
+
+      } else if (avg >= 2.6) {
+
+        statusObj = STATUS_LEVELS.ON_TRACK;
+
+      } else if (avg >= 2.0) {
+
+        statusObj = STATUS_LEVELS.NEEDS_BOOST;
+
+      } else {
+
+        statusObj = STATUS_LEVELS.FOCUS_AREA;
+
+      }
+
+      domainStatus[domain] = { avg, statusObj };
+
+ 
+
+      if (avg < minAvg) {
+
+        minAvg = avg;
+
+        lowestDomain = domain;
+
+      }
+
+      if (avg > maxAvg) {
+
+        maxAvg = avg;
+
+        highestDomain = domain;
+
+      }
+
+    });
+
+ 
+
+    const overallAvg = overallSum / 4;
+
+ 
+
+    // Profile Mapping
+
+    let profileKey = 'BUILDER';
+
+    if (overallAvg >= 3.4) profileKey = 'ARCHITECT';
+
+    else if (overallAvg >= 2.8) profileKey = 'PLANNER';
+
+    else if (overallAvg >= 2.2) profileKey = 'BUILDER';
+
+    else if (overallAvg >= 1.7) profileKey = 'IMPROVISER';
+
+    else profileKey = 'FIREFIGHTER';
+
+ 
+
+    const profileObj = PROFILES[profileKey];
+
+ 
+
+    // Smart Dynamic Sentence Feedback
+
+    let personalizedSentence = '';
+
+    if (highestDomain === DOMAINS.TIME && lowestDomain === DOMAINS.DIGITAL) {
+
+      personalizedSentence = 'אתה מצליח לעמוד בזמנים היטב, אך ניהול קבצים וסדר דיגיטלי נכון יחסוך לך חיפושים מיותרים ועומס ברגע האחרון.';
+
+    } else if (highestDomain === DOMAINS.ENVIRONMENT && lowestDomain === DOMAINS.TIME) {
+
+      personalizedSentence = 'הסביבה והציוד שלך מסודרים היטב, אך התחלת למידה מוקדמת יותר תמנע ממך לחץ מיותר בערב שלפני מבחן.';
+
+    } else if (highestDomain === DOMAINS.COGNITIVE && lowestDomain === DOMAINS.ENVIRONMENT) {
+
+      personalizedSentence = 'יש לך יכולת תכנון גבוהה בראש, אך שמירה על סדר בשולחן הלימודים וביללקוט תעזור לך להוציא את התוכנית לפועל ברוגע.';
+
+    } else if (overallAvg >= 3.3) {
+
+      personalizedSentence = 'ההתארגנות שלך טובה ועקבית כמעט בכל התחומים. שמירה על השגרות הקיימות תבטיח לך שקט נפשי גם בתקופות עומס.';
+
+    } else if (overallAvg <= 2.0) {
+
+      personalizedSentence = 'אתה נוטה לאלתר ולפעול ברגע האחרון. אימוץ שגרת הכנה קצרה בכל ערב תחסוך לך זמן רב ולחץ מיותר במהלך היום.';
+
+    } else {
+
+      personalizedSentence = `יש לך בסיס טוב ב${highestDomain}, אך במצבי עומס יש נטייה לאלתר. התמקדות בחיזוק ${lowestDomain} תעזור לך להרגיש בשליטה מלאה.`;
+
+    }
+
+ 
+
+    const recommendedPlan = SEVEN_DAY_PLANS[lowestDomain];
+
+ 
+
+    return {
+
+      domainStatus,
+
+      profileObj,
+
+      lowestDomain,
+
+      personalizedSentence,
+
+      recommendedPlan
+
+    };
+
+  }, [userAnswers]);
+
+ 
+
+  // CSV Data Export for Teachers
+
+  const exportToCSV = () => {
+
+    const csvRows = [
+
+      ['קוד כיתה', 'תאריך יצירה', 'סטטוס'],
+
+      ...classCodesList.map(c => [c.code, c.createdAt, c.active ? 'פעיל' : 'לא פעיל'])
+
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + csvRows.map(e => e.join(',')).join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+
+    const link = document.createElement('a');
+
+    link.setAttribute('href', encodedUri);
+
+    link.setAttribute('download', 'מראת_ההתארגנות_נתוני_כיתות.csv');
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+  };
+
+ 
+
+  return (
+
+    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-slate-200 flex flex-col justify-between">
+
+     
+
+      {/* Top Header */}
+
+      <header className="border-b border-slate-200 bg-white sticky top-0 z-40">
+
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+
+          <button
+
+            onClick={() => setCurrentScreen('welcome')}
+
+            className="text-right focus:outline-none group"
+
+          >
+
+            <h1 className="text-lg font-bold tracking-tight text-slate-900 group-hover:text-slate-700 transition-colors">
+
+              מראת ההתארגנות
+
+            </h1>
+
+            <p className="text-[11px] text-slate-400 font-normal">מערכת אבחון אישית למיומנויות סדר וארגון</p>
+
+          </button>
+
+ 
+
+          <div className="flex items-center gap-2">
+
+            {currentScreen !== 'teacher_dash' ? (
+
+              <button
+
+                onClick={() => setCurrentScreen('teacher_dash')}
+
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors flex items-center gap-1.5"
+
+              >
+
+                <span>כניסת מורה (ישיר)</span>
+
+                <span className="text-slate-400">←</span>
+
+              </button>
+
+            ) : (
+
+              <button
+
+                onClick={() => setCurrentScreen('welcome')}
+
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-transparent rounded-lg transition-colors"
+
+              >
+
+                יציאה מפורטל מורה
+
+              </button>
+
+            )}
+
+          </div>
+
+        </div>
+
+      </header>
+
+ 
+
+      {/* Main Content Area */}
+
+      <main className="max-w-3xl mx-auto w-full px-4 py-8 flex-grow">
+
+ 
+
+        {/* SCREEN 1: Welcome / מסך פתיחה */}
+
+        {currentScreen === 'welcome' && (
+
+          <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-200 shadow-sm space-y-8 text-center max-w-2xl mx-auto">
+
+            <div className="space-y-3">
+
+              <span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+
+                אבחון אישי לתלמידים • כיתות ו'–ח'
+
+              </span>
+
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+
+                מראת ההתארגנות
+
+              </h2>
+
+              <p className="text-lg font-medium text-slate-600">
+
+                היכרות עם הרגלי ההתארגנות שלך.
+
+              </p>
+
+            </div>
+
+ 
+
+            <div className="text-sm sm:text-base text-slate-600 leading-relaxed text-right bg-slate-50 p-6 rounded-xl border border-slate-200 space-y-2">
+
+              <p>במהלך האבחון תתבקש לבחור כיצד אתה נוהג לפעול במצבים שונים מחיי היום־יום.</p>
+
+              <p>אין תשובות נכונות או לא נכונות. ענה בכנות.</p>
+
+              <p className="font-semibold text-slate-800">האבחון נמשך כ־5 דקות.</p>
+
+            </div>
+
+ 
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+
+              <button
+
+                onClick={() => setCurrentScreen('entry')}
+
+                className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm text-base"
+
+              >
+
+                התחל אבחון כתלמיד
+
+              </button>
+
+              <button
+
+                onClick={() => setCurrentScreen('teacher_dash')}
+
+                className="w-full sm:w-auto px-6 py-3.5 bg-white text-slate-800 font-semibold rounded-xl border border-slate-300 hover:bg-slate-50 transition-colors text-base"
+
+              >
+
+                כניסת מורה
+
+              </button>
+
+            </div>
+
+          </div>
+
+        )}
+
+ 
+
+        {}
+
+        {/* SCREEN 2: Student Entry / כניסת תלמיד */}
+
+        {currentScreen === 'entry' && (
+
+          <div className="bg-white rounded-2xl p-8 sm:p-10 border border-slate-200 shadow-sm max-w-md mx-auto space-y-6">
+
+            <div className="space-y-1 text-center">
+
+              <h2 className="text-2xl font-bold text-slate-900">כניסה לאבחון</h2>
+
+              <p className="text-xs text-slate-500">הזן את קוד הכיתה שקיבלת מהמורה ואת פרטיך</p>
+
+            </div>
+
+ 
+
+            <form onSubmit={handleEntrySubmit} className="space-y-4 text-right">
+
+              {entryError && (
+
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
+
+                  {entryError}
+
+                </div>
+
+              )}
+
+ 
+
+              <div className="space-y-1.5">
+
+                <label className="block text-xs font-semibold text-slate-700">
+
+                  קוד כיתה <span className="text-red-500">*</span>
+
+                </label>
+
+                <input
+
+                  type="text"
+
+                  value={classCode}
+
+                  onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+
+                  placeholder="לדוגמה: ORANIT8"
+
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-mono tracking-widest text-center focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all uppercase"
+
+                  required
+
+                />
+
+              </div>
+
+ 
+
+              <div className="space-y-1.5">
+
+                <label className="block text-xs font-semibold text-slate-700">
+
+                  שם פרטי <span className="text-red-500">*</span>
+
+                </label>
+
+                <input
+
+                  type="text"
+
+                  value={studentName}
+
+                  onChange={(e) => setStudentName(e.target.value)}
+
+                  placeholder="הכנס שם פרטי..."
+
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all"
+
+                  required
+
+                />
+
+              </div>
+
+ 
+
+              <div className="space-y-1.5">
+
+                <label className="block text-xs font-semibold text-slate-700">
+
+                  כיתה (רשות)
+
+                </label>
+
+                <input
+
+                  type="text"
+
+                  value={studentGrade}
+
+                  onChange={(e) => setStudentGrade(e.target.value)}
+
+                  placeholder="לדוגמה: ז'2"
+
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all"
+
+                />
+
+              </div>
+
+ 
+
+              <button
+
+                type="submit"
+
+                className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm text-sm mt-2"
+
+              >
+
+                כניסה
+
+              </button>
+
+            </form>
+
+          </div>
+
+        )}
+
+ 
+
+        {/* SCREEN 3: Instructions / הוראות */}
+
+        {currentScreen === 'instructions' && (
+
+          <div className="bg-white rounded-2xl p-8 sm:p-10 border border-slate-200 shadow-sm max-w-xl mx-auto space-y-6 text-right">
+
+            <div className="space-y-2 border-b border-slate-100 pb-4">
+
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">שלב ההנחיות</span>
+
+              <h2 className="text-2xl font-bold text-slate-900">הנחיות למילוי השאלון</h2>
+
+            </div>
+
+ 
+
+            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+
+              <ul className="space-y-3">
+
+                <li className="flex items-start gap-3">
+
+                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+
+                  <span>האבחון כולל <strong>24 מצבים קצרים</strong> מחיי היום-יום בבית ובבית הספר.</span>
+
+                </li>
+
+                <li className="flex items-start gap-3">
+
+                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+
+                  <span>בכל מצב יש לבחור <strong>אפשרות אחת בלבד</strong> שהכי מתאימה להתנהגות שלך.</span>
+
+                </li>
+
+                <li className="flex items-start gap-3">
+
+                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+
+                  <span>ענה לפי מה שאתה עושה בדרך כלל – לא לפי מה ש"ראוי" לעשות.</span>
+
+                </li>
+
+                <li className="flex items-start gap-3">
+
+                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</span>
+
+                  <span>לא ניתן לחזור אחורה לאחר מעבר למצב הבא.</span>
+
+                </li>
+
+              </ul>
+
+            </div>
+
+ 
+
+            <button
+
+              onClick={startDiagnostic}
+
+              className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm text-sm mt-4"
+
+            >
+
+              התחל אבחון
+
+            </button>
+
+          </div>
+
+        )}
+
+ 
+
+        {}
+
+        {/* SCREEN 4: Diagnostic Question / מסך מצב (שאלה) */}
+
+        {currentScreen === 'diagnostic' && shuffledQuestions.length > 0 && (
+
+          <div className="bg-white rounded-2xl p-6 sm:p-10 border border-slate-200 shadow-sm max-w-2xl mx-auto space-y-8 text-right">
+
+           
+
+            {/* Top Progress Bar & Counter */}
+
+            <div className="space-y-2">
+
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+
+                <span>מצב {currentQIndex + 1} מתוך {shuffledQuestions.length}</span>
+
+                <span>{Math.round(((currentQIndex + 1) / shuffledQuestions.length) * 100)}%</span>
+
+              </div>
+
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                <div
+
+                  className="h-full bg-slate-900 transition-all duration-300 ease-out"
+
+                  style={{ width: `${((currentQIndex + 1) / shuffledQuestions.length) * 100}%` }}
+
+                />
+
+              </div>
+
+            </div>
+
+ 
+
+            {/* Scenario Question */}
+
+            <div className="space-y-3 pt-2">
+
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">מצב יומיומי</span>
+
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+
+                {shuffledQuestions[currentQIndex].scenario}
+
+              </h3>
+
+            </div>
+
+ 
+
+            {/* Options List */}
+
+            <div className="space-y-3">
+
+              {shuffledQuestions[currentQIndex].options.map((option, idx) => {
+
+                const isSelected = selectedOption === option.score;
+
+                return (
+
+                  <button
+
+                    key={idx}
+
+                    onClick={() => setSelectedOption(option.score)}
+
+                    className={`w-full p-4 text-right text-sm sm:text-base rounded-xl border transition-all flex items-start gap-3 ${
+
+                      isSelected
+
+                        ? 'border-slate-900 bg-slate-900 text-white font-medium shadow-sm'
+
+                        : 'border-slate-200 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50'
+
+                    }`}
+
+                  >
+
+                    <span className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
+
+                      isSelected ? 'border-white bg-white text-slate-900' : 'border-slate-400 text-transparent'
+
+                    }`}>
+
+                      ✓
+
+                    </span>
+
+                    <span className="leading-normal">{option.text}</span>
+
+                  </button>
+
+                );
+
+              })}
+
+            </div>
+
+ 
+
+            {/* Submit / Next Button */}
+
+            <button
+
+              onClick={handleNextQuestion}
+
+              disabled={selectedOption === null}
+
+              className={`w-full py-3.5 rounded-xl font-semibold transition-all text-sm ${
+
+                selectedOption !== null
+
+                  ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm cursor-pointer'
+
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+
+              }`}
+
+            >
+
+              {currentQIndex + 1 === shuffledQuestions.length ? 'סיים ואסוף תוצאות' : 'המשך למצב הבא'}
+
+            </button>
+
+          </div>
+
+        )}
+
+ 
+
+        {/* SCREEN 5: Processing Screen / מסך עיבוד */}
+
+        {currentScreen === 'processing' && (
+
+          <div className="bg-white rounded-2xl p-12 border border-slate-200 shadow-sm max-w-md mx-auto text-center space-y-6">
+
+            <div className="w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
+
+            <div className="space-y-2">
+
+              <h3 className="text-xl font-bold text-slate-900">מנתח את דפוסי ההתארגנות שלך...</h3>
+
+              <p className="text-xs text-slate-500">המערכת מעבדת את התשובות ובונה את תמונת הראי האישית</p>
+
+            </div>
+
+          </div>
+
+        )}
+
+ 
+
+        {}
+
+        {/* SCREEN 6: Results / מסך תוצאות */}
+
+        {currentScreen === 'results' && resultsData && (
+
+          <div className="space-y-8 text-right max-w-3xl mx-auto">
+
+           
+
+            {/* Main Header Banner */}
+
+            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-3">
+
+              <div className="flex justify-between items-start flex-wrap gap-2">
+
+                <div>
+
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">דוח סיכום אישי</span>
+
+                  <h2 className="text-3xl font-extrabold text-slate-900 mt-1">מפת ההתארגנות האישית שלך</h2>
+
+                  {studentName && <p className="text-xs text-slate-500 mt-0.5">שלום {studentName} • כיתה {classCode}</p>}
+
+                </div>
+
+                <span className="px-3 py-1 bg-slate-100 text-slate-800 font-bold rounded-lg text-xs">
+
+                  ללא ציון מספרי
+
+                </span>
+
+              </div>
+
+              <p className="text-sm text-slate-600 border-t border-slate-100 pt-3">
+
+                השיקוף שלהלן עוזר לך להכיר את נקודות החוזק שלך ואת האזורים שבהם שינוי קטן ייצור הבדל גדול.
+
+              </p>
+
+            </div>
+
+ 
+
+            {/* General Profile Box */}
+
+            <div className="bg-white rounded-2xl p-8 border-2 border-slate-900 shadow-sm space-y-3">
+
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">פרופיל ההתארגנות הכללי</span>
+
+              <h3 className="text-2xl font-bold text-slate-900">
+
+                {resultsData.profileObj.title}
+
+              </h3>
+
+              <p className="text-base font-semibold text-slate-800">
+
+                "{resultsData.profileObj.subtitle}"
+
+              </p>
+
+              <p className="text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+
+                {resultsData.profileObj.desc}
+
+              </p>
+
+            </div>
+
+ 
+
+            {/* Smart Personalized Sentence Highlight (Recommendation Upgrade) */}
+
+            <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 space-y-2 shadow-md">
+
+              <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">משפט שיקוף אישי עבורך:</div>
+
+              <p className="text-base sm:text-lg font-medium leading-relaxed">
+
+                "{resultsData.personalizedSentence}"
+
+              </p>
+
+            </div>
+
+ 
+
+            {/* 4 Domains Breakdown */}
+
+            <div className="space-y-4">
+
+              <h3 className="text-lg font-bold text-slate-900">שיקוף לפי ארבעת תחומי ההתארגנות</h3>
+
+             
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {Object.keys(DOMAINS).map((domainKey) => {
+
+                  const domainName = DOMAINS[domainKey];
+
+                  const info = resultsData.domainStatus[domainName];
+
+                  return (
+
+                    <div key={domainKey} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+
+                      <div className="space-y-2">
+
+                        <div className="flex justify-between items-start gap-2">
+
+                          <h4 className="font-bold text-slate-900 text-base">{domainName}</h4>
+
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold shrink-0 ${
+
+                            info.statusObj.title === 'מצוין' ? 'bg-slate-900 text-white' :
+
+                            info.statusObj.title === 'בדרך הנכונה' ? 'bg-slate-200 text-slate-900' :
+
+                            info.statusObj.title === 'כדאי לחזק' ? 'bg-slate-100 text-slate-800 border border-slate-300' :
+
+                            'bg-slate-100 text-slate-900 font-extrabold border-2 border-slate-900'
+
+                          }`}>
+
+                            {info.statusObj.title}
+
+                          </span>
+
+                        </div>
+
+                        <p className="text-xs text-slate-500">{DOMAIN_DESCRIPTIONS[domainName]}</p>
+
+                      </div>
+
+ 
+
+                      <div className="pt-3 border-t border-slate-100 text-xs text-slate-700 leading-relaxed font-medium">
+
+                        {info.statusObj.text}
+
+                      </div>
+
+                    </div>
+
+                  );
+
+                })}
+
+              </div>
+
+            </div>
+
+ 
+
+            {/* Focused Single Domain 7-Day Plan */}
+
+            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
+
+              <div className="space-y-1">
+
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">צעדים מעשיים השבוע</span>
+
+                <h3 className="text-xl font-bold text-slate-900">
+
+                  השבוע נתמקד ב{resultsData.lowestDomain}
+
+                </h3>
+
+                <p className="text-xs text-slate-500">תוכנית 7 ימים ממוקדת לבניית הרגל אחד חדש בכל יום</p>
+
+              </div>
+
+ 
+
+              <div className="space-y-2.5">
+
+                {resultsData.recommendedPlan.days.map((item, idx) => (
+
+                  <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4 text-xs sm:text-sm">
+
+                    <span className="px-2.5 py-1 bg-slate-900 text-white font-bold rounded-md text-xs shrink-0">
+
+                      {item.day}
+
+                    </span>
+
+                    <span className="text-slate-800 font-medium">{item.task}</span>
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            </div>
+
+ 
+
+            <button
+
+              onClick={() => setCurrentScreen('finish')}
+
+              className="w-full py-4 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm text-sm"
+
+            >
+
+              המשך למסך הסיום
+
+            </button>
+
+          </div>
+
+        )}
+
+ 
+
+        {/* SCREEN 7: Finish Screen / מסך סיום */}
+
+        {currentScreen === 'finish' && (
+
+          <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-200 shadow-sm max-w-lg mx-auto text-center space-y-6">
+
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-900 font-extrabold text-xl flex items-center justify-center mx-auto">
+
+              ✓
+
+            </div>
+
+           
+
+            <div className="space-y-2">
+
+              <h2 className="text-3xl font-extrabold text-slate-900">כל הכבוד!</h2>
+
+              <p className="text-sm font-semibold text-slate-600">השגרת אבחון "מראת ההתארגנות" הושלמה בהצלחה.</p>
+
+            </div>
+
+ 
+
+            <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 leading-relaxed text-right space-y-2">
+
+              <p>התארגנות אינה הופכת אותנו למושלמים.</p>
+
+              <p>היא עוזרת לנו לחסוך זמן, להפחית עומס ולפנות מקום לדברים החשובים באמת.</p>
+
+            </div>
+
+ 
+
+            <button
+
+              onClick={() => {
+
+                setUserAnswers({});
+
+                setCurrentScreen('welcome');
+
+              }}
+
+              className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-sm"
+
+            >
+
+              סיום וחזרה לדף הבית
+
+            </button>
+
+          </div>
+
+        )}
+
+ 
+
+        {}
+
+        {/* SCREEN 8: Teacher Management Portal / מערכת למורה */}
+
+        {currentScreen === 'teacher_dash' && (
+
+          <div className="space-y-8 text-right max-w-4xl mx-auto">
+
+           
+
+            {/* Header section */}
+
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+
+              <div className="flex justify-between items-center flex-wrap gap-2">
+
+                <div>
+
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">אזור ניהול פדגוגי</span>
+
+                  <h2 className="text-2xl font-bold text-slate-900">לוח בקרה למורה</h2>
+
+                </div>
+
+                <button
+
+                  onClick={exportToCSV}
+
+                  className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors shadow-sm flex items-center gap-1.5"
+
+                >
+
+                  <span>ייצוא נתונים ל-Excel (CSV)</span>
+
+                </button>
+
+              </div>
+
+              <p className="text-xs text-slate-500">
+
+                יצירת קוד כיתה, הקרנה מיידית של קוד QR לסריקה, וצפייה בהתפלגות התשובות בכיתה.
+
+              </p>
+
+            </div>
+
+ 
+
+            {/* Code Generator Box */}
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+
+              <h3 className="text-lg font-bold text-slate-900">יצירת קוד כיתה חדש והצגת QR</h3>
+
+             
+
+              {codeError && (
+
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
+
+                  {codeError}
+
+                </div>
+
+              )}
+
+ 
+
+              <div className="flex flex-col sm:flex-row gap-3">
+
+                <input
+
+                  type="text"
+
+                  value={newCodeInput}
+
+                  onChange={(e) => setNewCodeInput(e.target.value.toUpperCase())}
+
+                  placeholder="הקלד קוד אישי (או לחץ ליצירת קוד אקראי)"
+
+                  className="flex-1 p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono tracking-wider text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none uppercase"
+
+                />
+
+                <button
+
+                  onClick={() => {
+
+                    const randomCode = generateRandomCode();
+
+                    setNewCodeInput(randomCode);
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    setClassCodesList([{ code: randomCode, createdAt: today, active: true, count: 0 }, ...classCodesList]);
+
+                    setQrModalCode(randomCode);
+
+                  }}
+
+                  className="px-4 py-3 bg-slate-100 text-slate-800 text-xs font-semibold rounded-xl hover:bg-slate-200 border border-slate-300 transition-colors"
+
+                >
+
+                  מחולל קוד + QR מיידי 🎲
+
+                </button>
+
+                <button
+
+                  onClick={handleCreateCode}
+
+                  className="px-6 py-3 bg-slate-900 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
+
+                >
+
+                  צור קוד והצג QR 📱
+
+                </button>
+
+              </div>
+
+            </div>
+
+ 
+
+            {/* Active Class Codes Panel */}
+
+            {classCodesList.length > 0 && (
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+
+                  <h3 className="text-base font-bold text-slate-900">קוד כיתה פעיל לשיעור זה</h3>
+
+                  <span className="text-xs text-slate-500">קוד אחרון שנוצר: <strong className="font-mono text-slate-900">{classCodesList[0].code}</strong></span>
+
+                </div>
+
+ 
+
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+
+                  <div>
+
+                    <span className="text-xs text-slate-500 block">קוד כיתה:</span>
+
+                    <span className="text-2xl font-mono font-bold tracking-wider text-slate-900">{classCodesList[0].code}</span>
+
+                  </div>
+
+                  <div className="flex gap-2">
+
+                    <button
+
+                      onClick={() => setQrModalCode(classCodesList[0].code)}
+
+                      className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm flex items-center gap-2"
+
+                    >
+
+                      <span>הצג קוד QR לסריקה בכיתה 📱</span>
+
+                    </button>
+
+                    <button
+
+                      onClick={() => handleCopyLink(classCodesList[0].code)}
+
+                      className="px-3 py-2.5 bg-white text-slate-700 hover:bg-slate-100 text-xs font-semibold rounded-xl border border-slate-300 transition-colors"
+
+                    >
+
+                      {copySuccess ? '✓ הועתק!' : '📋 העתק קישור'}
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            )}
+
+ 
+
+            {/* Class Domain Breakdown & Real-Time Stats */}
+
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+
+              <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-4">
+
+                <div>
+
+                  <h3 className="text-lg font-bold text-slate-900">תמונת מצב כיתתית מצטברת</h3>
+
+                  <p className="text-xs text-slate-500">נתונים בזמן אמת של התפלגות התחומים והפרופילים בכיתה</p>
+
+                </div>
+
+ 
+
+                {/* Privacy toggle */}
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+
+                  <input
+
+                    type="checkbox"
+
+                    checked={showIndividualNames}
+
+                    onChange={(e) => setShowIndividualNames(e.target.checked)}
+
+                    className="rounded text-slate-900 focus:ring-slate-900"
+
+                  />
+
+                  <span>אפשר זיהוי אישי בשמות (ברירת מחדל: אנונימי)</span>
+
+                </label>
+
+              </div>
+
+ 
+
+              {/* Dynamic Empty State for Real Stats */}
+
+              {(!classCodesList.length || classCodesList.every(c => !c.count)) ? (
+
+                <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-300 space-y-2">
+
+                  <p className="text-sm font-semibold text-slate-700">עדיין לא הוגשו תשובות בכיתה זו</p>
+
+                  <p className="text-xs text-slate-500">הצג לתלמידים את קוד ה-QR. הנתונים הכיתתיים יופיעו כאן אוטומטית כשתלמידים ישלימו את האבחון.</p>
+
+                </div>
+
+              ) : (
+
+                <div className="space-y-6">
+
+                  {/* Aggregated Domain Stats Bar */}
+
+                  <div className="space-y-4">
+
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">ממוצע כיתתי לפי תחומים</h4>
+
+                   
+
+                    <div className="space-y-3">
+
+                      {Object.values(DOMAINS).map((domainName) => (
+
+                        <div key={domainName} className="space-y-1">
+
+                          <div className="flex justify-between text-xs font-semibold text-slate-800">
+
+                            <span>{domainName}</span>
+
+                            <span>ממתין לתשובות נוספות</span>
+
+                          </div>
+
+                          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+
+                            <div className="h-full bg-slate-900 rounded-full w-0 transition-all duration-500" />
+
+                          </div>
+
+                        </div>
+
+                      ))}
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </div>
+
+ 
+
+          </div>
+
+        )}
+
+ 
+
+      </main>
+
+ 
+
+      {}
+
+      {/* QR Code Projection Modal for Classroom Use */}
+
+      {qrModalCode && (
+
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-2xl border border-slate-200 overflow-y-auto max-h-[90vh]">
+
+           
+
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">מראת ההתארגנות • סריקה לכיתה</span>
+
+              <button
+
+                onClick={() => setQrModalCode(null)}
+
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm"
+
+              >
+
+                ✕
+
+              </button>
+
+            </div>
+
+ 
+
+            <div className="space-y-1">
+
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900">סורקים ומגיעים ישר לאבחון</h3>
+
+              <p className="text-xs sm:text-sm text-slate-500">כוון את מצלמת הטלפון לברקוד כדי להיכנס לשאלון הכיתתי</p>
+
+            </div>
+
+ 
+
+            {/* Scannable QR Code Image */}
+
+            <div className="p-4 bg-white border-2 border-slate-900 rounded-2xl inline-block shadow-inner">
+
+              <img
+
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+
+                  `${getBaseUrl()}?code=${qrModalCode}`
+
+                )}`}
+
+                alt={`QR Code for ${qrModalCode}`}
+
+                className="w-48 h-48 sm:w-56 sm:h-56 mx-auto rounded-lg"
+
+              />
+
+            </div>
+
+ 
+
+            {/* Displayed Class Code */}
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+
+              <span className="text-xs text-slate-400 font-medium">קוד הכיתה:</span>
+
+              <div className="text-3xl font-mono font-bold tracking-widest text-slate-900">{qrModalCode}</div>
+
+            </div>
+
+ 
+
+            {/* Explanatory Notice for Local Preview vs Production */}
+
+            <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-right text-xs text-amber-900 space-y-1">
+
+              <div className="font-bold flex items-center gap-1">
+
+                <span>💡 כיצד התלמידים ייכנסו בכיתה?</span>
+
+              </div>
+
+              <p className="leading-relaxed">
+
+                <strong>אפשרות 1:</strong> התלמידים נכנסים לאתר האבחון ומקלידים את הקוד <strong className="font-mono">{qrModalCode}</strong>.
+
+              </p>
+
+              <p className="leading-relaxed">
+
+                <strong>אפשרות 2 (סריקה):</strong> סריקת ה-QR תעבוד בנייד ברגע שהמערכת מועלית לכתובת האתר האמיתית שלכם באינטרנט.
+
+              </p>
+
+            </div>
+
+ 
+
+            {/* Copy Direct Link & Custom Domain Helper */}
+
+            <div className="space-y-2 text-right pt-1">
+
+              <button
+
+                onClick={() => handleCopyLink(qrModalCode)}
+
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+
+              >
+
+                <span>{copySuccess ? '✓ הקישור הועתק בהצלחה!' : '📋 העתק קישור ישיר לשיתוף ב-WhatsApp / קלאסרום'}</span>
+
+              </button>
+
+ 
+
+              <details className="text-xs text-slate-500 pt-1">
+
+                <summary className="cursor-pointer hover:text-slate-800 text-center font-medium">
+
+                  ⚙️ הגדרת כתובת האתר (אם תרצה לשנות את הדומיין)
+
+                </summary>
+
+                <div className="mt-2 space-y-1.5 text-right bg-slate-50 p-3 rounded-lg border border-slate-200">
+
+                  <label className="block text-slate-700 font-medium text-[11px]">כתובת האתר הפעילה:</label>
+
+                  <input
+
+                    type="text"
+
+                    value={customBaseUrl}
+
+                    onChange={(e) => setCustomBaseUrl(e.target.value)}
+
+                    placeholder={getBaseUrl()}
+
+                    className="w-full p-2 bg-white border border-slate-300 rounded text-xs font-mono dir-ltr text-left"
+
+                  />
+
+                  <p className="text-[10px] text-slate-400 leading-tight">
+
+                    תוכל להקליד כאן את כתובת השרת/הדומיין שלך במידה והאפליקציה מאוחסנת בשרת חיצוני.
+
+                  </p>
+
+                </div>
+
+              </details>
+
+            </div>
+
+ 
+
+            <button
+
+              onClick={() => setQrModalCode(null)}
+
+              className="w-full py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-sm"
+
+            >
+
+              סגור חלונית
+
+            </button>
+
+ 
+
+          </div>
+
+        </div>
+
+      )}
+
+ 
+
+      {/* Footer */}
+
+      <footer className="border-t border-slate-200 bg-white py-6 mt-12">
+
+        <div className="max-w-4xl mx-auto px-6 text-center text-xs text-slate-400 space-y-1">
+
+          <p>מראת ההתארגנות • מערכת אבחון אישית למיומנויות סדר וארגון לתלמידים</p>
+
+          <p>פותח במיוחד עבור תלמידי חטיבת ביניים (כיתות ו'–ח') • ללא ציון וללא שיפוט</p>
+
+        </div>
+
+      </footer>
+
+ 
+
+    </div>
+
+  );
+
+}
